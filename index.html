@@ -1487,5 +1487,89 @@ Tip: Use the AI chat for deeper briefs (requires /api/chat backend).
       (If you want, tell me and I’ll paste the exact two files again.)
     */
   </script>
+  // ----- LIVE DATA (USGS + EONET + GDELT) -----
+async function fetchLive(){
+  const r = await fetch('/.netlify/functions/feed', { cache: 'no-store' });
+  if(!r.ok) throw new Error('feed failed');
+  return await r.json();
+}
+
+function severityColor(sev){
+  if(sev >= 80) return '#ef4444';
+  if(sev >= 55) return '#f59e0b';
+  return '#22c55e';
+}
+
+// If you DON'T already have these, keep them.
+// If you already have renderSignals/renderFeed, do NOT duplicate — just use yours.
+function renderFeed(items){
+  const el = document.querySelector('#feed');
+  if(!el) return;
+  el.innerHTML = '';
+  items.slice(0,8).forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'feedItem';
+    row.innerHTML = `
+      <b>${it.title}</b>
+      <span>${it.summary}<br>
+      <span style="opacity:.75;">Severity: <b>${it.severity}</b> • ${new Date(it.updated).toLocaleString()}</span>
+      </span>
+    `;
+    el.appendChild(row);
+  });
+}
+
+let markerLayer; // uses your Leaflet map
+
+function renderSignals(items){
+  if(!markerLayer) return;
+  markerLayer.clearLayers();
+
+  items.forEach(it=>{
+    if(typeof it.lat !== 'number' || typeof it.lng !== 'number') return;
+
+    const m = L.circleMarker([it.lat, it.lng], {
+      radius: 7,
+      color: severityColor(it.severity),
+      weight: 2,
+      fillColor: severityColor(it.severity),
+      fillOpacity: 0.55
+    });
+
+    const link = it.link ? `<br><a href="${it.link}" target="_blank" rel="noreferrer">Source ↗</a>` : '';
+    m.bindPopup(`
+      <div style="font-family:Inter,system-ui;">
+        <b>${it.title}</b><br/>
+        <span style="opacity:.8;">Severity:</span> <b>${it.severity}</b><br/>
+        <span style="opacity:.8;">Summary:</span> ${it.summary}<br/>
+        <span style="opacity:.7; font-size:12px;">Updated: ${new Date(it.updated).toLocaleString()}</span>
+        ${link}
+      </div>
+    `);
+
+    m.addTo(markerLayer);
+  });
+}
+
+async function refreshAll(){
+  try{
+    const data = await fetchLive();
+
+    const griEl = document.querySelector('#gri');
+    const updEl = document.querySelector('#updated');
+
+    if(griEl) griEl.textContent = `${data.axisIndex}/100`;
+    if(updEl) updEl.textContent = new Date(data.updated).toLocaleString();
+
+    renderSignals(data.items || []);
+    renderFeed(data.items || []);
+
+  }catch(e){
+    const feedEl = document.querySelector('#feed');
+    if(feedEl){
+      feedEl.innerHTML = `<div class="feedItem"><b>Live feed offline</b><span>Netlify function didn’t respond. Check /.netlify/functions/feed</span></div>`;
+    }
+  }
+}
 </body>
 </html>
