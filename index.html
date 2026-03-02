@@ -1486,6 +1486,13 @@ Tip: Use the AI chat for deeper briefs (requires /api/chat backend).
       On Netlify, add netlify.toml + netlify/functions/chat.js + OPENAI_API_KEY env var.
       (If you want, tell me and I’ll paste the exact two files again.)
     */
+    console.log("Axis Signal script loaded");
+
+window.addEventListener('load', async ()=>{
+  console.log("Running refreshAll()");
+  await refreshAll();
+  setInterval(refreshAll, 120000);
+});
   </script>
   // ----- LIVE DATA (USGS + EONET + GDELT) -----
 async function fetchLive(){
