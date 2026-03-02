@@ -1424,6 +1424,16 @@ Tip: Use the AI chat for deeper briefs (requires /api/chat backend).
     const chatInput = document.getElementById('chatInput');
     const openChatBtn = document.getElementById('openChat');
 
+    async function askAxisAI(userText){
+  const r = await fetch("/.netlify/functions/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: userText })
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data?.error || "chat_failed");
+  return data.reply || "No response.";
+}
     function addMsg(text, who='bot'){
       const div = document.createElement('div');
       div.className = 'msg' + (who==='user' ? ' user' : '');
