@@ -2,7 +2,7 @@
 // Real-time-ish feed: USGS + NASA EONET + GDELT proxy, returns a unified payload.
 // Works on Netlify Functions (Node runtime with fetch available).
 
-export async function handler() {
+export async function handler(event, context) {
   try {
     const now = new Date();
     const updated = now.toISOString();
@@ -109,10 +109,17 @@ export async function handler() {
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
-      },
+      return {
+  statusCode: 200,
+  headers: {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,OPTIONS"
+  },
+  body: JSON.stringify({ ... })
+};
       body: JSON.stringify({
         updated,
         axisIndex,
@@ -123,8 +130,11 @@ export async function handler() {
   } catch (e) {
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "feed_failed", details: String(e) })
-    };
+      headers: {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "GET,OPTIONS"
+},
   }
 }
